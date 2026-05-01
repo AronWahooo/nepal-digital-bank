@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://bankuser:bankpass@db/bankdb
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: dev-secret-key-change-in-production-use-openssl-rand-hex-32
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      DEBUG: "true"
+      ENVIRONMENT: development
+      ADMIN_EMAIL: admin@nepalbank.com
+      ADMIN_PASSWORD: Admin@1234
+      ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:8080","http://localhost:80"]'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: bankdb
+      POSTGRES_USER: bankuser
+      POSTGRES_PASSWORD: bankpass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bankuser -d bankdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  redisdata:
