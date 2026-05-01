@@ -1,58 +1,13 @@
-# render.yaml — Infrastructure as Code for Render.com
-# Deploy: Connect this repo to Render, it auto-reads this file.
-
 services:
-  # ─── FastAPI Backend ──────────────────────────────────────────────────────
   - type: web
     name: nepal-digital-bank-api
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    plan: free  # Upgrade to starter ($7/mo) for always-on
-    healthCheckPath: /health
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: nepal-bank-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: nepal-bank-redis
-          property: connectionString
-      - key: SECRET_KEY
-        generateValue: true  # Render auto-generates a secret
-      - key: ENCRYPTION_KEY
-        generateValue: true
-      - key: DEBUG
-        value: false
-      - key: ENVIRONMENT
-        value: production
-      - key: ALLOWED_ORIGINS
-        value: '["https://nepal-digital-bank.onrender.com"]'
-      - key: SPARROW_SMS_TOKEN
-        sync: false  # Set manually in Render dashboard
-      - key: ADMIN_EMAIL
-        value: admin@nepalbank.com
-      - key: ADMIN_PASSWORD
-        sync: false  # Set manually — use a strong password!
-
-  # ─── Frontend (nginx) ─────────────────────────────────────────────────────
-  - type: web
-    name: nepal-digital-bank-frontend
-    runtime: static
-    staticPublishPath: ./frontend
+    env: docker
     plan: free
+    repo: https://github.com/AronWahooo/nepal-digital-bank
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    autoDeploy: true
 
 databases:
-  # ─── PostgreSQL ───────────────────────────────────────────────────────────
-  - name: nepal-bank-db
-    databaseName: bankdb
-    user: bankuser
-    plan: free  # 256MB, sufficient for dev/MVP
-
-  # ─── Redis ────────────────────────────────────────────────────────────────
-  - name: nepal-bank-redis
+  - name: nepal-db
     plan: free
-    type: redis
-    maxmemoryPolicy: allkeys-lru
